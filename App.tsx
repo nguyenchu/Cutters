@@ -6,7 +6,6 @@ import CuttersStack from './src/routes/CuttersStack';
 
 const Stack = createStackNavigator();
 
-
 const HomeScreen  = ({navigation}: { navigation: any }) => {
   setTimeout(() => {
     navigation.navigate('CuttersStack');
