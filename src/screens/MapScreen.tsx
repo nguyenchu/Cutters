@@ -1,47 +1,21 @@
 import Geolocation from '@react-native-community/geolocation';
 import React, { useEffect, useState } from 'react';
-import { BackHandler, PermissionsAndroid, Platform, StyleSheet, View } from 'react-native';
-import MapView, {PROVIDER_GOOGLE} from 'react-native-maps';
+import { ActivityIndicator, Alert, BackHandler, StyleSheet, Text, View } from 'react-native';
+import MapView, {Marker, PROVIDER_GOOGLE, Region} from 'react-native-maps';
 
 
 const MapScreen = () => {
-  const [latitude, setLatitude] = useState<number | undefined>();
-  const [longitude, setLongitude] = useState<number | undefined>();
-
-  const requestLocationPermission = async () => {
-    if (Platform.OS === 'android') {
-      const granted = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
-      );
-      return granted === PermissionsAndroid.RESULTS.GRANTED;
-    }
-    return true;
-  };
-
-  const getLocation = async () => {
-    const hasPermission = await requestLocationPermission();
-    if (!hasPermission) {
-      return;
-    }
-
-    Geolocation.getCurrentPosition(
-      (position) => {
-        console.log('Lat: ', position.coords.latitude);
-        console.log('Lng: ', position.coords.longitude);
-
-        setLatitude(position.coords.latitude);
-        setLongitude(position.coords.longitude);
-      },
-      (error: any) => console.error('Could not get location: ', error),
-      { enableHighAccuracy: true, timeout: 20000, maximumAge: 10000 }
-    );
-  };
+  const [location, setLocation] = useState<Region | null>(null);
+  const [salons, setSalons] = useState<Salon[]>([]);
+  const [selectedSalon, setSelectedSalon] = useState<Salon | null>(null);
 
   useEffect(() => {
-    getLocation();
-    console.log('Lat: ', latitude);
-    console.log('Lng: ', longitude);
-  }, []);
+    requestLocation();
+  });
+
+  useEffect(() => {
+    fetchSalons();
+  });
 
   useEffect(() => {
     const backAction = () => {
@@ -56,6 +30,53 @@ const MapScreen = () => {
     return () => backHandler.remove();
   }, []);
 
+  const requestLocation = () => {
+    Geolocation.requestAuthorization();
+    Geolocation.getCurrentPosition(
+      (position) => {
+        setLocation({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.01,
+        });
+      },
+      (error) => Alert.alert('Location Error', error.message),
+      {enableHighAccuracy: true, timeout: 20000, maximumAge: 10000}
+    );
+  };
+
+  const fetchSalons = async () => {
+    try {
+      const response = await fetch('https://api.test.cutters.no/v2/salons');
+      console.log('Response:', response);
+
+      const data: Salon[] = await response.json();
+      console.log('Data', data);
+
+      const parsedSalons: Salon[] = data
+      .filter((salon) => salon.coordinates)
+      .map((salon) => ({
+        id: salon.id,
+        name: salon.name,
+        address: salon.address,
+        postalPlace: salon.postalPlace,
+        coordinates: {
+          latitude: Number(salon.coordinates.latitude),
+          longitude: Number(salon.coordinates.longitude),
+        },
+      }));
+      setSalons(parsedSalons);
+      console.log('Salons:', salons);
+    } catch (error) {
+      console.error('Error fetching salons:', error);
+    }
+  };
+
+  if (!location) {
+    return <ActivityIndicator size="large" style={styles.loader} />;
+  }
+
   return (
 
     <View style={styles.container}>
@@ -64,31 +85,47 @@ const MapScreen = () => {
         style={styles.map}
         provider={PROVIDER_GOOGLE}
         googleMapId="3223b21e6635e866"
-        initialRegion={{
-          latitude: latitude ?? 50,
-          longitude: longitude ?? 10,
-          latitudeDelta: 0.0,
-          longitudeDelta: 0.0,
-        }}
-        // region={{latitude: latitude ?? 59.9,
-        //   longitude: longitude ?? 10.7,
-        //   latitudeDelta: 0.0,
-        //   longitudeDelta: 0.0}}
+        initialRegion={location}
         customMapStyle={mapStyle}
-      />
+        zoomControlEnabled
+        showsUserLocation>
+            {salons.map((salon) => (
+              <Marker
+                key={salon.id}
+                coordinate={salon.coordinates}
+                title={salon.name}
+                onPress={() => setSelectedSalon(salon)}
+              />
+            ))}
+        </MapView>
 
+      {selectedSalon && (
+        <View style={styles.salonInfo}>
+          <Text style={styles.salonName}>{selectedSalon.name}</Text>
+          <Text>{selectedSalon.address}, {selectedSalon.postalPlace}</Text>
+        </View>
+      )}
     </View>
 
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
+  container: { flex: 1 },
+  loader: { flex: 1 },
   map: {
     ...StyleSheet.absoluteFillObject, // Makes it full-screen
   },
+  salonInfo: {
+    position: 'absolute',
+    bottom: 20,
+    left: 20,
+    right: 20,
+    backgroundColor: 'white',
+    padding: 10,
+    borderRadius: 10,
+  },
+  salonName: { fontSize: 18, fontWeight: 'bold' },
 });
 
 const mapStyle = [
