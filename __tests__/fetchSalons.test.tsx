@@ -32,7 +32,7 @@ test('fetchSalons returns salons data', async () => {
                 },
             },
         ])
-    );
+    ); 
 
     const salons = await fetchSalons();
     expect(salons).toEqual([
@@ -51,4 +51,3 @@ test('fetchSalons handles API failure', async () => {
     const salons = await fetchSalons();
     expect(salons).toEqual([]);
 });
-

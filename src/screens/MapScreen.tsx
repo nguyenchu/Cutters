@@ -48,6 +48,29 @@ const MapScreen = () => {
 
   const fetchSalons = async () => {
     try {
+      const salonDummyData: Salon[] = [
+        {
+          id: 1,
+          name: 'Cutters Triaden',
+          address: 'Triaden Senter',
+          coordinates: {
+            latitude: 59.91902,
+            longitude: 10.95295,
+            // 59.91902102738273, 10.952950859493722
+          },
+        },
+        {
+          id: 2,
+          name: 'Cutters Metro',
+          address: 'Metro Senter',
+          coordinates: {
+            latitude: 59.92762,
+            longitude: 10.95876,
+            // 59.92762256530426, 10.958764738168265
+            },
+        },
+      ];
+
       const response = await fetch('https://api.test.cutters.no/v2/salons');
       console.log('Response:', response);
 
@@ -66,7 +89,8 @@ const MapScreen = () => {
           longitude: Number(salon.coordinates.longitude),
         },
       }));
-      setSalons(parsedSalons);
+      const allSalons = [...parsedSalons, ...salonDummyData];
+      setSalons(allSalons);
       console.log('Salons:', salons);
     } catch (error) {
       console.error('Error fetching salons:', error);
