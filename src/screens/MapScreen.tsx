@@ -50,7 +50,7 @@ const MapScreen = () => {
     try {
       const salonDummyData: Salon[] = [
         {
-          id: 1,
+          id: 100,
           name: 'Cutters Triaden',
           address: 'Triaden Senter',
           coordinates: {
@@ -60,7 +60,7 @@ const MapScreen = () => {
           },
         },
         {
-          id: 2,
+          id: 101,
           name: 'Cutters Metro',
           address: 'Metro Senter',
           coordinates: {
@@ -108,7 +108,7 @@ const MapScreen = () => {
       <MapView
         style={styles.map}
         provider={PROVIDER_GOOGLE}
-        googleMapId="3223b21e6635e866"
+        googleMapId="7fbf2bf388db7d23"
         initialRegion={location}
         customMapStyle={mapStyle}
         zoomControlEnabled
